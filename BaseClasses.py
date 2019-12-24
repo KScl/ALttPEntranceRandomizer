@@ -8,7 +8,7 @@ from Utils import int16_as_bytes
 
 class World(object):
 
-    def __init__(self, players, shuffle, logic, mode, swords, difficulty, difficulty_adjustments, timer, progressive, goal, algorithm, accessibility, shuffle_ganon, quickswap, fastmenu, disable_music, retro, custom, customitemarray, hints):
+    def __init__(self, players, shuffle, logic, mode, swords, difficulty, difficulty_adjustments, timer, progressive, goal, algorithm, accessibility, shuffle_ganon, quickswap, fastmenu, disable_music, retro, universal_keys, custom, customitemarray, hints):
         self.players = players
         self.shuffle = shuffle.copy()
         self.logic = logic.copy()
@@ -36,7 +36,7 @@ class World(object):
         self.light_world_light_cone = False
         self.dark_world_light_cone = False
         self.clock_mode = 'off'
-        self.rupoor_cost = 10
+        self.rupoor_cost = 50
         self.aga_randomness = True
         self.lock_aga_door_in_escape = False
         self.save_and_quit_from_boss = True
@@ -47,6 +47,7 @@ class World(object):
         self.fastmenu = fastmenu
         self.disable_music = disable_music
         self.retro = retro.copy()
+        self.universal_keys = universal_keys.copy()
         self.custom = custom
         self.customitemarray = customitemarray
         self.can_take_damage = True
@@ -386,7 +387,7 @@ class CollectionState(object):
         return self.prog_items.count((item, player)) >= count
 
     def has_key(self, item, player, count=1):
-        if self.world.retro[player]:
+        if self.world.universal_keys[player]:
             return self.can_buy_unlimited('Small Key (Universal)', player)
         if count == 1:
             return (item, player) in self.prog_items
@@ -951,6 +952,20 @@ class Shop(object):
             'create_location': create_location
         }
 
+    def replace_inventory(self, old_item, new_item, price, max=0, replacement=None, replacement_price=0, create_location=False):
+        for inv in self.inventory:
+            if inv is None or inv['item'] is None or inv['item'] != old_item:
+                continue
+
+            inv['item'] = new_item
+            inv['price'] = price
+            inv['max'] = max
+            inv['replacement'] = replacement
+            inv['replacement_price'] = replacement_price
+            inv['create_location'] = create_location
+            return True
+        return False
+
 
 class Spoiler(object):
 
@@ -1053,6 +1068,7 @@ class Spoiler(object):
                          'logic': self.world.logic,
                          'mode': self.world.mode,
                          'retro': self.world.retro,
+                         'universal_keys': self.world.universal_keys,
                          'weapons': self.world.swords,
                          'goal': self.world.goal,
                          'shuffle': self.world.shuffle,
@@ -1098,6 +1114,7 @@ class Spoiler(object):
             outfile.write('Logic:                           %s\n' % self.metadata['logic'])
             outfile.write('Mode:                            %s\n' % self.metadata['mode'])
             outfile.write('Retro:                           %s\n' % {k: 'Yes' if v else 'No' for k, v in self.metadata['retro'].items()})
+            outfile.write('Universal Keys:                  %s\n' % {k: 'Yes' if v else 'No' for k, v in self.metadata['universal_keys'].items()})
             outfile.write('Swords:                          %s\n' % self.metadata['weapons'])
             outfile.write('Goal:                            %s\n' % self.metadata['goal'])
             outfile.write('Difficulty:                      %s\n' % self.metadata['item_pool'])
