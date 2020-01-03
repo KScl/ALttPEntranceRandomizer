@@ -46,11 +46,11 @@ def fill_dungeons(world):
     all_state_base = world.get_all_state()
 
     for player in range(1, world.players + 1):
-        pinball_room = world.get_location('Skull Woods - Pinball Room', player)
         if world.universal_keys[player]:
-            world.push_item(pinball_room, ItemFactory('Small Key (Universal)', player), False)
-        else:
-            world.push_item(pinball_room, ItemFactory('Small Key (Skull Woods)', player), False)
+            continue # Not guaranteed to be a small key
+
+        pinball_room = world.get_location('Skull Woods - Pinball Room', player)
+        world.push_item(pinball_room, ItemFactory('Small Key (Skull Woods)', player), False)
         pinball_room.event = True
         pinball_room.locked = True
 
@@ -125,11 +125,11 @@ def fill_dungeons_restrictive(world, shuffled_locations):
     all_state_base = world.get_all_state()
 
     for player in range(1, world.players + 1):
-        pinball_room = world.get_location('Skull Woods - Pinball Room', player)
         if world.universal_keys[player]:
-            world.push_item(pinball_room, ItemFactory('Small Key (Universal)', player), False)
-        else:
-            world.push_item(pinball_room, ItemFactory('Small Key (Skull Woods)', player), False)
+            continue # Not guaranteed to be a small key
+
+        pinball_room = world.get_location('Skull Woods - Pinball Room', player)
+        world.push_item(pinball_room, ItemFactory('Small Key (Skull Woods)', player), False)
         pinball_room.event = True
         pinball_room.locked = True
         shuffled_locations.remove(pinball_room)

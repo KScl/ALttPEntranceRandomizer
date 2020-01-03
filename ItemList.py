@@ -29,6 +29,9 @@ normalthird10extra = ['Rupees (50)'] * 4 + ['Rupees (20)'] * 3 + ['Arrows (10)',
 normalfourth5extra = ['Arrows (10)'] * 2 + ['Rupees (20)'] * 2 + ['Rupees (5)']
 normalfinal25extra = ['Rupees (20)'] * 23 + ['Rupees (5)'] * 2
 
+#universal_keys_special = ['Small Key (Universal)'] * 15 + ['Rupees (100)'] * 4 + ['Magic Upgrade (1/2)'] + ['Rupoor'] * 8,
+
+
 Difficulty = namedtuple('Difficulty',
                         ['baseitems', 'bottles', 'bottle_count', 'same_bottle', 'progressiveshield',
                          'basicshield', 'progressivearmor', 'basicarmor', 'swordless',
@@ -58,7 +61,7 @@ difficulties = {
         timedother = ['Green Clock'] * 20 + ['Blue Clock'] * 10 + ['Red Clock'] * 10,
         triforcehunt = ['Triforce Piece'] * 30,
         triforce_pieces_required = 20,
-        universal_keys = ['Small Key (Universal)'] * 14 + ['Rupees (100)'] * 4 + ['Magic Upgrade (1/2)'] + ['Rupoor'] * 8,
+        universal_keys = ['Small Key (Universal)'] * 17 + ['Rupees (5)'] * 10,
         extras = [normalfirst15extra, normalsecond15extra, normalthird10extra, normalfourth5extra, normalfinal25extra],
         progressive_sword_limit = 4,
         progressive_shield_limit = 3,
@@ -381,9 +384,10 @@ def set_up_shops(world, player):
         for shop in random.sample([s for s in world.shops if s.replaceable and s.region.player == player], 5):
             shop.active = True
             shop.add_inventory(0, 'Single Arrow', 80)
-            shop.add_inventory(1, 'Small Key (Universal)', 100)
+            shop.add_inventory(1, 'Small Heart', 10)
             shop.add_inventory(2, 'Bombs (10)', 50)
-    elif world.universal_keys[player]:
+
+    if world.universal_keys[player]:
         for shop in world.shops:
             shop.active = True
             shop.replace_inventory('Small Heart', 'Small Key (Universal)', 100)
