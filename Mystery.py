@@ -160,6 +160,10 @@ def roll_settings(weights):
     if world_state == 'retro':
         ret.mode = 'open'
         ret.retro = True
+        ret.universalkeys = True
+    elif world_state == 'universalkeys':
+        ret.mode = 'open'
+        ret.universalkeys = True
 
     hints = get_choice('hints')
     ret.hints = hints == 'on'
@@ -199,7 +203,7 @@ def roll_settings(weights):
     enemy_health = get_choice('enemy_health')
     ret.enemy_health = enemy_health
 
-    ret.beemizer = int(get_choice('beemizer')) if 'beemizer' in weights.keys() else 1 # suck it :)
+    ret.beemizer = int(get_choice('beemizer')) if 'beemizer' in weights.keys() else 0
 
     return ret
 
