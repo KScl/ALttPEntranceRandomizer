@@ -612,6 +612,8 @@ def patch_rom(world, player, rom, enemized):
 
     # handle difficulty_adjustments
     if world.difficulty_adjustments[player] == 'hard':
+        rom.write_byte(0x180181, 0x01) # Make silver arrows work only on ganon
+        rom.write_byte(0x180182, 0x00) # Don't auto equip silvers on pickup
         # Powdered Fairies Prize
         rom.write_byte(0x36DD0, 0xD8)  # One Heart
         # potion heal amount
@@ -630,6 +632,8 @@ def patch_rom(world, player, rom, enemized):
         # Set stun items
         rom.write_byte(0x180180, 0x02) # Hookshot only
     elif world.difficulty_adjustments[player] == 'expert':
+        rom.write_byte(0x180181, 0x01) # Make silver arrows work only on ganon
+        rom.write_byte(0x180182, 0x00) # Don't auto equip silvers on pickup
         # Powdered Fairies Prize
         rom.write_byte(0x36DD0, 0xD8)  # One Heart
         # potion heal amount
@@ -648,6 +652,8 @@ def patch_rom(world, player, rom, enemized):
         # Set stun items
         rom.write_byte(0x180180, 0x00) # Nothing
     else:
+        rom.write_byte(0x180181, 0x00) # Make silver arrows freely usable
+        rom.write_byte(0x180182, 0x01) # auto equip silvers on pickup
         # Powdered Fairies Prize
         rom.write_byte(0x36DD0, 0xE3)  # fairy
         # potion heal amount
@@ -670,45 +676,23 @@ def patch_rom(world, player, rom, enemized):
         else:
             overflow_replacement = GREEN_TWENTY_RUPEES
 
-    rom.write_byte(0x180181, 0x00) # Make silver arrows freely usable
-    rom.write_byte(0x180182, 0x01) # auto equip silvers on pickup
-
     #Byrna residual magic cost
     rom.write_bytes(0x45C42, [0x04, 0x02, 0x01])
 
     difficulty = world.difficulty_requirements[player]
 
     #Set overflow items for progressive equipment
-    mw_sword_replacements = {0: overflow_replacement,
-                             1: item_table['Fighter Sword'][3],
-                             2: item_table['Master Sword'][3],
-                             3: item_table['Tempered Sword'][3],
-                             4: item_table['Golden Sword'][3]}
-    mw_shield_replacements = {0: overflow_replacement,
-                              1: item_table['Blue Shield'][3],
-                              2: item_table['Red Shield'][3],
-                              3: item_table['Mirror Shield'][3]}
-    mw_armor_replacements = {0: overflow_replacement,
-                             1: item_table['Blue Mail'][3],
-                             2: item_table['Red Mail'][3]}
-    mw_bottle_replacements = {0: overflow_replacement,
-                              1: item_table['Blue Potion'][3],
-                              2: item_table['Blue Potion'][3],
-                              3: item_table['Blue Potion'][3],
-                              4: item_table['Blue Potion'][3]}
-    mw_bow_replacements = {0: overflow_replacement,
-                             1: item_table['Bow'][3],
-                             2: item_table['Bow'][3]}
     rom.write_bytes(0x180090,
-                    [difficulty.progressive_sword_limit, mw_sword_replacements[difficulty.progressive_sword_limit] if world.players > 1 else overflow_replacement,
-                     difficulty.progressive_shield_limit, mw_shield_replacements[difficulty.progressive_shield_limit] if world.players > 1 else overflow_replacement,
-                     difficulty.progressive_armor_limit, mw_armor_replacements[difficulty.progressive_armor_limit] if world.players > 1 else overflow_replacement,
-                     difficulty.progressive_bottle_limit, mw_bottle_replacements[difficulty.progressive_bottle_limit] if world.players > 1 else overflow_replacement,
-                     difficulty.progressive_bow_limit, mw_bow_replacements[difficulty.progressive_bow_limit] if world.players > 1 else overflow_replacement])
+                    [difficulty.progressive_sword_limit if world.swords[player] != 'swordless' else 0, overflow_replacement,
+                     difficulty.progressive_shield_limit, overflow_replacement,
+                     difficulty.progressive_armor_limit, overflow_replacement,
+                     difficulty.progressive_bottle_limit, overflow_replacement,
+                     difficulty.progressive_bow_limit, overflow_replacement])
 
     if difficulty.progressive_bow_limit < 2 and world.swords[player] == 'swordless':
-        rom.write_bytes(0x180098, [2, mw_bow_replacements[difficulty.progressive_bow_limit] if world.players > 1 else overflow_replacement])
+        rom.write_bytes(0x180098, [2, overflow_replacement])
         rom.write_byte(0x180181, 0x01) # Make silver arrows work only on ganon
+        rom.write_byte(0x180182, 0x00) # Don't auto equip silvers on pickup
 
     # set up game internal RNG seed
     for i in range(1024):
@@ -1353,13 +1337,18 @@ def write_strings(rom, world, player):
         tt['kakariko_flophouse_man'] = 'I really hate mowing my yard.\n{PAGEBREAK}\nI should move.'
 
     def hint_text(dest, ped_hint=False):
-        hint = dest.hint_text if not ped_hint else dest.pedestal_hint_text
+        if not dest:
+            return "nothing"
+        if ped_hint:
+            hint = dest.pedestal_hint_text if dest.pedestal_hint_text else "unknown item"
+        else:
+            hint = dest.hint_text if dest.hint_text else "something"
         if dest.player != player:
             if ped_hint:
                 hint += " for p%d!" % dest.player
             elif type(dest) in [Region, Location]:
                 hint += " in p%d's world" % dest.player
-            elif type(dest) is Item:
+            else:
                 hint += " for p%d" % dest.player
         return hint
 
@@ -1532,14 +1521,11 @@ def write_strings(rom, world, player):
     if distinguished_prog_bow_loc:
         prog_bow_locs.remove(distinguished_prog_bow_loc)
         silverarrow_hint = (' %s?' % hint_text(distinguished_prog_bow_loc).replace('Ganon\'s', 'my'))
-        tt['ganon_phase_3_no_silvers_alt'] = 'Did you find the silver arrows%s' % silverarrow_hint
+        tt['ganon_phase_3_no_silvers'] = 'Did you find the silver arrows%s' % silverarrow_hint
 
     if any(prog_bow_locs):
         silverarrow_hint = (' %s?' % hint_text(random.choice(prog_bow_locs)).replace('Ganon\'s', 'my'))
-        tt['ganon_phase_3_no_silvers'] = 'Did you find the silver arrows%s' % silverarrow_hint
-
-
-    silverarrow_hint = (' %s?' % hint_text(silverarrows[0]).replace('Ganon\'s', 'my')) if silverarrows else '?\nI think not!'
+        tt['ganon_phase_3_no_silvers_alt'] = 'Did you find the silver arrows%s' % silverarrow_hint
 
 
     crystal5 = world.find_items('Crystal 5', player)[0]

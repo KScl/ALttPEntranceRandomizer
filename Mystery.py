@@ -26,7 +26,7 @@ def parse_yaml(txt):
     return ret
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--multi', default=1, type=lambda value: min(max(int(value), 1), 255))
     multiargs, _ = parser.parse_known_args()
 
@@ -198,6 +198,8 @@ def roll_settings(weights):
 
     enemy_health = get_choice('enemy_health')
     ret.enemy_health = enemy_health
+
+    ret.beemizer = int(get_choice('beemizer')) if 'beemizer' in weights.keys() else 1 # suck it :)
 
     return ret
 

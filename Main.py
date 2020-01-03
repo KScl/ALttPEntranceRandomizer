@@ -22,6 +22,13 @@ from Utils import output_path, parse_names_string
 __version__ = '0.6.3-pre'
 
 def main(args, seed=None):
+    if args.outputpath:
+        try:
+            os.mkdir(args.outputpath)
+        except OSError:
+            pass
+        output_path.cached_path = args.outputpath
+
     start = time.process_time()
 
     # initialize the world
@@ -45,6 +52,7 @@ def main(args, seed=None):
     world.enemy_shuffle = args.shuffleenemies.copy()
     world.enemy_health = args.enemy_health.copy()
     world.enemy_damage = args.enemy_damage.copy()
+    world.beemizer = args.beemizer.copy()
 
     world.rom_seeds = {player: random.randint(0, 999999999) for player in range(1, world.players + 1)}
 
@@ -53,8 +61,8 @@ def main(args, seed=None):
     for player in range(1, world.players + 1):
         world.difficulty_requirements[player] = difficulties[world.difficulty[player]]
 
-        if world.mode[player] == 'standard' and (world.enemy_shuffle[player] != 'none' or world.enemy_health[player] not in ['default', 'easy']):
-            world.escape_assist[player].append(['bombs']) # enemized escape assumes infinite bombs available and will likely be unbeatable without it
+        if world.mode[player] == 'standard' and world.enemy_shuffle[player] != 'none':
+            world.escape_assist[player].append('bombs') # enemized escape assumes infinite bombs available and will likely be unbeatable without it
 
         if world.mode[player] != 'inverted':
             create_regions(world, player)
@@ -155,7 +163,7 @@ def main(args, seed=None):
             patch_rom(world, player, rom, use_enemizer)
 
             enemizer_patch = []
-            if use_enemizer:
+            if use_enemizer and (args.enemizercli or not args.jsonout):
                 enemizer_patch = get_enemizer_patch(world, player, rom, args.rom, args.enemizercli, args.shufflepalette[player], args.shufflepots[player])
 
             multidata.rom_names[player] = list(rom.name)
@@ -253,6 +261,7 @@ def copy_world(world):
     ret.enemy_shuffle = world.enemy_shuffle.copy()
     ret.enemy_health = world.enemy_health.copy()
     ret.enemy_damage = world.enemy_damage.copy()
+    ret.beemizer = world.beemizer.copy()
 
     for player in range(1, world.players + 1):
         if world.mode[player] != 'inverted':

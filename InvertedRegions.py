@@ -9,7 +9,7 @@ def create_inverted_regions(world, player):
                          ["Blinds Hideout", "Hyrule Castle Secret Entrance Drop", 'Kings Grave Outer Rocks', 'Dam',
                           'Inverted Big Bomb Shop', 'Tavern North', 'Chicken House', 'Aginahs Cave', 'Sahasrahlas Hut', 'Kakariko Well Drop', 'Kakariko Well Cave',
                           'Blacksmiths Hut', 'Bat Cave Drop Ledge', 'Bat Cave Cave', 'Sick Kids House', 'Hobo Bridge', 'Lost Woods Hideout Drop', 'Lost Woods Hideout Stump',
-                          'Lumberjack Tree Tree', 'Lumberjack Tree Cave', 'Mini Moldorm Cave', 'Ice Rod Cave', 'Lake Hylia Central Island Pier',
+                          'Lumberjack Tree Tree', 'Lumberjack Tree Cave', 'Mini Moldorm Cave', 'Ice Rod Cave', 'Lake Hylia Central Island Pier', 'Lake Hylia Island',
                           'Bonk Rock Cave', 'Library', 'Two Brothers House (East)', 'Desert Palace Stairs', 'Eastern Palace', 'Master Sword Meadow',
                           'Sanctuary', 'Sanctuary Grave', 'Death Mountain Entrance Rock', 'Light World River Drop',
                           'Elder House (East)', 'Elder House (West)', 'North Fairy Cave', 'North Fairy Cave Drop', 'Lost Woods Gamble', 'Snitch Lady (East)', 'Snitch Lady (West)', 'Tavern (Front)',
@@ -377,7 +377,7 @@ def mark_dark_world_regions(world, player):
 shop_table = {
     'Cave Shop (Dark Death Mountain)': (0x0112, 0xC1, True),
     'Red Shield Shop': (0x0110, 0xC1, True),
-    'Dark Lake Hylia Shop': (0x010F, 0xC1, True),
+    'Dark Lake Hylia Shop': (0x010F, 0xC1, False),
     'Dark World Lumberjack Shop': (0x010F, 0xC1, True),
     'Village of Outcasts Shop': (0x010F, 0xC1, True),
     'Dark World Potion Shop': (0x010F, 0xC1, True),
@@ -396,7 +396,7 @@ _dark_world_shop_defaults = [('Red Potion', 150), ('Blue Shield', 50), ('Bombs (
 default_shop_contents = {
     'Cave Shop (Dark Death Mountain)': _basic_shop_defaults,
     'Red Shield Shop': [('Red Shield', 500), ('Bee', 10), ('Arrows (10)', 30)],
-    'Dark Lake Hylia Shop': _dark_world_shop_defaults,
+    'Dark Lake Hylia Shop': [('Blue Potion', 160), ('Blue Shield', 50), ('Bombs (10)', 50)],
     'Dark World Lumberjack Shop': _dark_world_shop_defaults,
     'Village of Outcasts Shop': _dark_world_shop_defaults,
     'Dark World Potion Shop': _dark_world_shop_defaults,

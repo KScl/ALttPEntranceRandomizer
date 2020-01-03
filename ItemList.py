@@ -182,31 +182,34 @@ def generate_itempool(world, player):
     for item in precollected_items:
         world.push_precollected(ItemFactory(item, player))
 
-    if world.mode[player] == 'standard' and not world.state.has_blunt_weapon(player) and "Link's Uncle" not in placed_items:
-        found_sword = False
-        found_bow = False
-        possible_weapons = []
-        for item in pool:
-            if item in ['Progressive Sword', 'Fighter Sword', 'Master Sword', 'Tempered Sword', 'Golden Sword']:
-                if not found_sword and world.swords[player] != 'swordless':
-                    found_sword = True
+    if world.mode[player] == 'standard' and not world.state.has_blunt_weapon(player):
+        if "Link's Uncle" not in placed_items:
+            found_sword = False
+            found_bow = False
+            possible_weapons = []
+            for item in pool:
+                if item in ['Progressive Sword', 'Fighter Sword', 'Master Sword', 'Tempered Sword', 'Golden Sword']:
+                    if not found_sword and world.swords[player] != 'swordless':
+                        found_sword = True
+                        possible_weapons.append(item)
+                if item in ['Progressive Bow', 'Bow'] and not found_bow:
+                    found_bow = True
                     possible_weapons.append(item)
-            if item in ['Progressive Bow', 'Bow'] and not found_bow:
-                found_bow = True
-                possible_weapons.append(item)
-            if item in ['Hammer', 'Bombs (10)', 'Fire Rod', 'Cane of Somaria', 'Cane of Byrna']:
-                if item not in possible_weapons:
-                    possible_weapons.append(item)
-        starting_weapon = random.choice(possible_weapons)
-        placed_items["Link's Uncle"] = starting_weapon
-        pool.remove(starting_weapon)
+                if item in ['Hammer', 'Bombs (10)', 'Fire Rod', 'Cane of Somaria', 'Cane of Byrna']:
+                    if item not in possible_weapons:
+                        possible_weapons.append(item)
+            starting_weapon = random.choice(possible_weapons)
+            placed_items["Link's Uncle"] = starting_weapon
+            pool.remove(starting_weapon)
+        if placed_items["Link's Uncle"] in ['Bow', 'Progressive Bow', 'Bombs (10)', 'Cane of Somaria', 'Cane of Byrna'] and world.enemy_health[player] not in ['default', 'easy']:
+            world.escape_assist[player].append('bombs')
 
     for (location, item) in placed_items.items():
         world.push_item(world.get_location(location, player), ItemFactory(item, player), False)
         world.get_location(location, player).event = True
         world.get_location(location, player).locked = True
 
-    world.itempool += ItemFactory(pool, player)
+    items = ItemFactory(pool, player)
 
     world.lamps_needed_for_dark_rooms = lamps_needed_for_dark_rooms
 
@@ -228,11 +231,24 @@ def generate_itempool(world, player):
     # rather than making all hearts/heart pieces progression items (which slows down generation considerably)
     # We mark one random heart container as an advancement item (or 4 heart pieces in expert mode)
     if world.difficulty[player] in ['normal', 'hard'] and not (world.custom and world.customitemarray[30] == 0):
-        [item for item in world.itempool if item.name == 'Boss Heart Container' and item.player == player][0].advancement = True
+        [item for item in items if item.name == 'Boss Heart Container'][0].advancement = True
     elif world.difficulty[player] in ['expert'] and not (world.custom and world.customitemarray[29] < 4):
-        adv_heart_pieces = [item for item in world.itempool if item.name == 'Piece of Heart' and item.player == player][0:4]
+        adv_heart_pieces = [item for item in items if item.name == 'Piece of Heart'][0:4]
         for hp in adv_heart_pieces:
             hp.advancement = True
+
+    beeweights = {0: {None: 100},
+                  1: {None: 75, 'trap': 25},
+                  2: {None: 40, 'trap': 40, 'bee': 20},
+                  3: {'trap': 50, 'bee': 50},
+                  4: {'trap': 100}}
+    def beemizer(item):
+        if world.beemizer[item.player] and not item.advancement and not item.priority and not item.type:
+            choice = random.choices(list(beeweights[world.beemizer[item.player]].keys()), weights=list(beeweights[world.beemizer[item.player]].values()))[0]
+            return item if not choice else ItemFactory("Bee Trap", player) if choice == 'trap' else ItemFactory("Bee", player)
+        return item
+
+    world.itempool += [beemizer(item) for item in items]
 
     # shuffle medallions
     mm_medallion = ['Ether', 'Quake', 'Bombos'][random.randint(0, 2)]
@@ -339,7 +355,7 @@ def fill_prizes(world, attempts=15):
                 random.shuffle(prize_locs)
                 fill_restrictive(world, all_state, prize_locs, prizepool, True)
             except FillError as e:
-                logging.getLogger('').info("Failed to place dungeon prizes (%s). Will retry %s more times", e, attempts)
+                logging.getLogger('').info("Failed to place dungeon prizes (%s). Will retry %s more times", e, attempts - attempt - 1)
                 for location in empty_crystal_locations:
                     location.item = None
                 continue

@@ -9,7 +9,7 @@ import shlex
 import sys
 
 from Main import main
-from Utils import is_bundled, close_console, output_path
+from Utils import is_bundled, close_console
 
 
 class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
@@ -22,7 +22,7 @@ def parse_arguments(argv, no_defaults=False):
         return value if not no_defaults else None
 
     # we need to know how many players we have first
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--multi', default=defval(1), type=lambda value: min(max(int(value), 1), 255))
     multiargs, _ = parser.parse_known_args(argv)
 
@@ -187,7 +187,7 @@ def parse_arguments(argv, no_defaults=False):
                              Random: Picks a random value between 0 and 7 (inclusive).
                              0-7:    Number of crystals needed
                              ''')
-    parser.add_argument('--openpyramid', help='''\
+    parser.add_argument('--openpyramid', default=defval(False), help='''\
                             Pre-opens the pyramid hole, this removes the Agahnim 2 requirement for it
                              ''', action='store_true')
     parser.add_argument('--rom', default=defval('Zelda no Densetsu - Kamigami no Triforce (Japan).sfc'), help='Path to an ALttP JAP(1.0) rom to use as a base.')
@@ -207,11 +207,11 @@ def parse_arguments(argv, no_defaults=False):
                              ''')
     parser.add_argument('--quickswap', help='Enable quick item swapping with L and R.', action='store_true')
     parser.add_argument('--disablemusic', help='Disables game music.', action='store_true')
-    parser.add_argument('--mapshuffle', help='Maps are no longer restricted to their dungeons, but can be anywhere', action='store_true')
-    parser.add_argument('--compassshuffle', help='Compasses are no longer restricted to their dungeons, but can be anywhere', action='store_true')
-    parser.add_argument('--keyshuffle', help='Small Keys are no longer restricted to their dungeons, but can be anywhere', action='store_true')
-    parser.add_argument('--bigkeyshuffle', help='Big Keys are no longer restricted to their dungeons, but can be anywhere', action='store_true')
-    parser.add_argument('--retro', help='''\
+    parser.add_argument('--mapshuffle', default=defval(False), help='Maps are no longer restricted to their dungeons, but can be anywhere', action='store_true')
+    parser.add_argument('--compassshuffle', default=defval(False), help='Compasses are no longer restricted to their dungeons, but can be anywhere', action='store_true')
+    parser.add_argument('--keyshuffle', default=defval(False), help='Small Keys are no longer restricted to their dungeons, but can be anywhere', action='store_true')
+    parser.add_argument('--bigkeyshuffle', default=defval(False), help='Big Keys are no longer restricted to their dungeons, but can be anywhere', action='store_true')
+    parser.add_argument('--retro', default=defval(False), help='''\
                              Keys are universal, shooting arrows costs rupees,
                              and a few other little things make this more like Zelda-1.
                              ''', action='store_true')
@@ -225,7 +225,7 @@ def parse_arguments(argv, no_defaults=False):
                              Locations: You will be able to reach every location in the game.
                              None:      You will be able to reach enough locations to beat the game.
                              ''')
-    parser.add_argument('--hints', help='''\
+    parser.add_argument('--hints', default=defval(False), help='''\
                              Make telepathic tiles and storytellers give helpful hints.
                              ''', action='store_true')
     # included for backwards compatibility
@@ -262,6 +262,7 @@ def parse_arguments(argv, no_defaults=False):
     parser.add_argument('--enemy_damage', default=defval('default'), choices=['default', 'shuffled', 'chaos'])
     parser.add_argument('--shufflepalette', default=defval(False), action='store_true')
     parser.add_argument('--shufflepots', default=defval(False), action='store_true')
+    parser.add_argument('--beemizer', default=defval(0), type=lambda value: min(max(int(value), 0), 4))
     parser.add_argument('--multi', default=defval(1), type=lambda value: min(max(int(value), 1), 255))
     parser.add_argument('--names', default=defval(''))
     parser.add_argument('--outputpath')
@@ -282,7 +283,7 @@ def parse_arguments(argv, no_defaults=False):
             for name in ['logic', 'mode', 'swords', 'goal', 'difficulty', 'item_functionality',
                          'shuffle', 'crystals_ganon', 'crystals_gt', 'openpyramid',
                          'mapshuffle', 'compassshuffle', 'keyshuffle', 'bigkeyshuffle',
-                         'retro', 'universalkeys', 'accessibility', 'hints', 'shufflepalette', 'shufflepots',
+                         'retro', 'universalkeys', 'accessibility', 'hints', 'shufflepalette', 'shufflepots', 'beemizer',
                          'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage']:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
@@ -294,9 +295,6 @@ def parse_arguments(argv, no_defaults=False):
 
 def start():
     args = parse_arguments(None)
-
-    if args.outputpath and os.path.isdir(args.outputpath):
-        output_path.cached_path = args.outputpath
 
     if is_bundled() and len(sys.argv) == 1:
         # for the bundled builds, if we have no arguments, the user

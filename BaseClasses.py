@@ -4,6 +4,7 @@ import logging
 import json
 from collections import OrderedDict
 from _vendor.collections_extended import bag
+from EntranceShuffle import door_addresses
 from Utils import int16_as_bytes
 
 class World(object):
@@ -85,6 +86,7 @@ class World(object):
             set_player_attr('enemy_shuffle', 'none')
             set_player_attr('enemy_health', 'default')
             set_player_attr('enemy_damage', 'default')
+            set_player_attr('beemizer', 0)
             set_player_attr('escape_assist', [])
             set_player_attr('crystals_needed_for_ganon', 7)
             set_player_attr('crystals_needed_for_gt', 7)
@@ -918,8 +920,8 @@ class Shop(object):
         # [id][roomID-low][roomID-high][doorID][zero][shop_config][shopkeeper_config][sram_index]
         entrances = self.region.entrances
         config = self.item_count
-        if len(entrances) == 1 and entrances[0].addresses:
-            door_id = entrances[0].addresses+1
+        if len(entrances) == 1 and entrances[0].name in door_addresses:
+            door_id = door_addresses[entrances[0].name][0]+1
         else:
             door_id = 0
             config |= 0x40 # ignore door id
