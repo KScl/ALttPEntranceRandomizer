@@ -61,7 +61,7 @@ difficulties = {
         timedother = ['Green Clock'] * 20 + ['Blue Clock'] * 10 + ['Red Clock'] * 10,
         triforcehunt = ['Triforce Piece'] * 30,
         triforce_pieces_required = 20,
-        universal_keys = ['Small Key (Universal)'] * 17 + ['Rupees (5)'] * 10,
+        universal_keys = ['Small Key (Universal)'] * 18 + ['Rupees (5)'] * 10,
         extras = [normalfirst15extra, normalsecond15extra, normalthird10extra, normalfourth5extra, normalfinal25extra],
         progressive_sword_limit = 4,
         progressive_shield_limit = 3,
@@ -88,7 +88,7 @@ difficulties = {
         timedother = ['Green Clock'] * 20 + ['Blue Clock'] * 10 + ['Red Clock'] * 10,
         triforcehunt = ['Triforce Piece'] * 30,
         triforce_pieces_required = 20,
-        universal_keys = ['Small Key (Universal)'] * 12 + ['Rupees (5)'] * 15,
+        universal_keys = ['Small Key (Universal)'] * 13 + ['Rupees (5)'] * 15,
         extras = [normalfirst15extra, normalsecond15extra, normalthird10extra, normalfourth5extra, normalfinal25extra],
         progressive_sword_limit = 3,
         progressive_shield_limit = 2,
@@ -115,7 +115,7 @@ difficulties = {
         timedother = ['Green Clock'] * 20 + ['Blue Clock'] * 10 + ['Red Clock'] * 10,
         triforcehunt = ['Triforce Piece'] * 30,
         triforce_pieces_required = 20,
-        universal_keys = ['Small Key (Universal)'] * 12 + ['Rupees (5)'] * 15,
+        universal_keys = ['Small Key (Universal)'] * 13 + ['Rupees (5)'] * 15,
         extras = [normalfirst15extra, normalsecond15extra, normalthird10extra, normalfourth5extra, normalfinal25extra],
         progressive_sword_limit = 2,
         progressive_shield_limit = 1,
@@ -384,11 +384,10 @@ def set_up_shops(world, player):
         for shop in random.sample([s for s in world.shops if s.replaceable and s.region.player == player], 5):
             shop.active = True
             shop.add_inventory(0, 'Single Arrow', 80)
-            shop.add_inventory(1, 'Small Heart', 10)
+            shop.add_inventory(1, 'Small Key (Universal)' if world.universal_keys[player] else 'Small Heart', 10)
             shop.add_inventory(2, 'Bombs (10)', 50)
-
-    if world.universal_keys[player]:
-        for shop in world.shops:
+    elif world.universal_keys[player]:
+        for shop in [s for s in world.shops if s.replaceable and s.region.player == player]:
             shop.active = True
             shop.replace_inventory('Small Heart', 'Small Key (Universal)', 100)
 
