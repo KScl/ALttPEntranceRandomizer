@@ -43,7 +43,7 @@ def main():
     parser.add_argument('--rom')
     parser.add_argument('--enemizercli')
     parser.add_argument('--outputpath')
-    parser.add_argument('--extendedmsu', default=defval(False), action='store_true', help='Use Extended MSU-1 tracks.')
+    parser.add_argument('--extendedmsu', action='store_true', help='Use Extended MSU-1 tracks.')
 
     for player in range(1, multiargs.multi + 1):
         parser.add_argument(f'--p{player}', help=argparse.SUPPRESS)
