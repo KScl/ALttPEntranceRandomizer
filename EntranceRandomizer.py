@@ -287,13 +287,8 @@ def parse_arguments(argv, no_defaults=False):
 
             for name in ['logic', 'mode', 'swords', 'goal', 'difficulty', 'item_functionality',
                          'shuffle', 'crystals_ganon', 'crystals_gt', 'openpyramid',
-<<<<<<< HEAD
-                         'mapshuffle', 'compassshuffle', 'keyshuffle', 'bigkeyshuffle',
-                         'retro', 'universalkeys', 'accessibility', 'hints', 'shufflepalette', 'shufflepots', 'beemizer',
-=======
                          'mapshuffle', 'compassshuffle', 'keyshuffle', 'bigkeyshuffle', 'startinventory',
-                         'retro', 'accessibility', 'hints', 'shufflepalette', 'shufflepots', 'beemizer',
->>>>>>> origin/multiworld_31
+                         'retro', 'universalkeys', 'accessibility', 'hints', 'shufflepalette', 'shufflepots', 'beemizer',
                          'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage']:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
