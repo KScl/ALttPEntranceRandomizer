@@ -8,15 +8,18 @@ from EntranceRandomizer import parse_arguments
 from Main import main as ERmain
 
 def parse_yaml(txt):
+    def strip(s):
+        s = s.strip()
+        return '' if not s else s.strip('"') if s[0] == '"' else s.strip("'") if s[0] == "'" else s
     ret = {}
     indents = {len(txt) - len(txt.lstrip(' ')): ret}
     for line in txt.splitlines():
         if not line:
             continue
         name, val = line.split(':', 1)
-        val = val.strip()
+        val = strip(val)
         spaces = len(name) - len(name.lstrip(' '))
-        name = name.strip()
+        name = strip(name)
         if val:
             indents[spaces][name] = val
         else:
@@ -75,7 +78,8 @@ def main():
 
     if args.rom:
         erargs.rom = args.rom
-    erargs.enemizercli = args.enemizercli
+    if args.enemizercli:
+        erargs.enemizercli = args.enemizercli
 
     settings_cache = {k: (roll_settings(v) if args.samesettings else None) for k, v in weights_cache.items()}
 
@@ -108,8 +112,12 @@ def get_weights(path):
     return parse_yaml(yaml)
 
 def roll_settings(weights):
-    def get_choice(option):
-        return random.choices(list(weights[option].keys()), weights=list(map(int,weights[option].values())))[0].replace('"','').replace("'",'')
+    def get_choice(option, root=weights):
+        if type(root[option]) is not dict:
+            return root[option]
+        if not root[option]:
+            return None
+        return random.choices(list(root[option].keys()), weights=list(map(int,root[option].values())))[0]
 
     ret = argparse.Namespace()
 
@@ -204,6 +212,13 @@ def roll_settings(weights):
 
     universalkeys = get_choice('universal_keys') if 'universal_keys' in weights.keys() else 'off'
     ret.universalkeys = universalkeys == 'on'
+
+    inventoryweights = weights.get('startinventory', {})
+    startitems = []
+    for item in inventoryweights.keys():
+        if get_choice(item, inventoryweights) == 'on':
+            startitems.append(item)
+    ret.startinventory = ','.join(startitems)
 
     return ret
 

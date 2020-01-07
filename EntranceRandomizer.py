@@ -211,11 +211,13 @@ def parse_arguments(argv, no_defaults=False):
     parser.add_argument('--compassshuffle', default=defval(False), help='Compasses are no longer restricted to their dungeons, but can be anywhere', action='store_true')
     parser.add_argument('--keyshuffle', default=defval(False), help='Small Keys are no longer restricted to their dungeons, but can be anywhere', action='store_true')
     parser.add_argument('--bigkeyshuffle', default=defval(False), help='Big Keys are no longer restricted to their dungeons, but can be anywhere', action='store_true')
+    parser.add_argument('--keysanity', default=defval(False), help=argparse.SUPPRESS, action='store_true')
     parser.add_argument('--retro', default=defval(False), help='''\
                              Keys are universal, shooting arrows costs rupees,
                              and a few other little things make this more like Zelda-1.
                              ''', action='store_true')
     parser.add_argument('--universalkeys', help='Universal small keys without other retro nonsense', default=defval(False), action='store_true')
+    parser.add_argument('--startinventory', default=defval(''), help='Specifies a list of items that will be in your starting inventory (separated by commas)')
     parser.add_argument('--custom', default=defval(False), help='Not supported.')
     parser.add_argument('--customitemarray', default=defval(False), help='Not supported.')
     parser.add_argument('--accessibility', default=defval('items'), const='items', nargs='?', choices=['items', 'locations', 'none'], help='''\
@@ -255,7 +257,7 @@ def parse_arguments(argv, no_defaults=False):
                             for VT site integration, do not use otherwise.
                             ''')
     parser.add_argument('--skip_playthrough', action='store_true', default=defval(False))
-    parser.add_argument('--enemizercli', default=defval(''))
+    parser.add_argument('--enemizercli', default=defval('EnemizerCLI/EnemizerCLI.Core'))
     parser.add_argument('--shufflebosses', default=defval('none'), choices=['none', 'basic', 'normal', 'chaos'])
     parser.add_argument('--shuffleenemies', default=defval('none'), choices=['none', 'shuffled', 'chaos'])
     parser.add_argument('--enemy_health', default=defval('default'), choices=['default', 'easy', 'normal', 'hard', 'expert'])
@@ -274,6 +276,8 @@ def parse_arguments(argv, no_defaults=False):
             parser.add_argument(f'--p{player}', default=defval(''), help=argparse.SUPPRESS)
 
     ret = parser.parse_args(argv)
+    if ret.keysanity:
+        ret.mapshuffle, ret.compassshuffle, ret.keyshuffle, ret.bigkeyshuffle = [True] * 4
 
     if multiargs.multi:
         defaults = copy.deepcopy(ret)
@@ -282,8 +286,13 @@ def parse_arguments(argv, no_defaults=False):
 
             for name in ['logic', 'mode', 'swords', 'goal', 'difficulty', 'item_functionality',
                          'shuffle', 'crystals_ganon', 'crystals_gt', 'openpyramid',
+<<<<<<< HEAD
                          'mapshuffle', 'compassshuffle', 'keyshuffle', 'bigkeyshuffle',
                          'retro', 'universalkeys', 'accessibility', 'hints', 'shufflepalette', 'shufflepots', 'beemizer',
+=======
+                         'mapshuffle', 'compassshuffle', 'keyshuffle', 'bigkeyshuffle', 'startinventory',
+                         'retro', 'accessibility', 'hints', 'shufflepalette', 'shufflepots', 'beemizer',
+>>>>>>> origin/multiworld_31
                          'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage']:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
