@@ -25,7 +25,8 @@ JAP10HASH = '03a63945398191337e896e5771f77173'
 
 class JsonRom(object):
 
-    def __init__(self):
+    def __init__(self, extended_msu=False):
+        self.extended_msu = extended_msu
         self.name = None
         self.patches = {}
         self.addresses = []
@@ -70,7 +71,8 @@ class JsonRom(object):
 
 class LocalRom(object):
 
-    def __init__(self, file, patch=True):
+    def __init__(self, file, patch=True, extended_msu=False):
+        self.extended_msu = extended_msu
         self.name = None
         with open(file, 'rb') as stream:
             self.buffer = read_rom(stream)
@@ -99,7 +101,8 @@ class LocalRom(object):
         self.buffer.extend(bytearray([0x00] * (0x200000 - len(self.buffer))))
 
         # load randomizer patches
-        with open(local_path('data/base2current.json'), 'r') as stream:
+        patch_path = 'data/base2current_extendedmsu.json' if self.extended_msu else 'data/base2current.json'
+        with open(local_path(patch_path), 'r') as stream:
             patches = json.load(stream)
         for patch in patches:
             if isinstance(patch, dict):
@@ -163,7 +166,7 @@ def read_rom(stream):
 
 def get_enemizer_patch(world, player, rom, baserom_path, enemizercli, shufflepalette, shufflepots):
     baserom_path = os.path.abspath(baserom_path)
-    basepatch_path = os.path.abspath(local_path('data/base2current.json'))
+    basepatch_path = os.path.abspath(local_path('data/base2current_extendedmsu.json' if rom.extended_msu else 'data/base2current.json'))
     randopatch_path = os.path.abspath(output_path('enemizer_randopatch.json'))
     options_path = os.path.abspath(output_path('enemizer_options.json'))
     enemizer_output_path = os.path.abspath(output_path('enemizer_output.json'))

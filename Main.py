@@ -156,13 +156,13 @@ def main(args, seed=None):
 
             local_rom = None
             if args.jsonout:
-                rom = JsonRom()
+                rom = JsonRom(args.extendedmsu)
             else:
                 if use_enemizer:
-                    local_rom = LocalRom(args.rom)
-                    rom = JsonRom()
+                    local_rom = LocalRom(args.rom, True, args.extendedmsu)
+                    rom = JsonRom(args.extendedmsu)
                 else:
-                    rom = LocalRom(args.rom)
+                    rom = LocalRom(args.rom, True, args.extendedmsu)
             patch_rom(world, player, rom, use_enemizer)
             rom_names.append((player, list(rom.name)))
 

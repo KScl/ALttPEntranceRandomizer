@@ -270,6 +270,7 @@ def parse_arguments(argv, no_defaults=False):
     parser.add_argument('--outputpath')
     parser.add_argument('--race', default=defval(False), action='store_true')
     parser.add_argument('--outputname')
+    parser.add_argument('--extendedmsu', default=defval(False), action='store_true', help='Use Extended MSU-1 tracks.')
 
     if multiargs.multi:
         for player in range(1, multiargs.multi + 1):
