@@ -1259,8 +1259,8 @@ def patch_rom(world, player, rom, enemized):
         rom.write_bytes(loc, number_upper)
         rom.write_bytes(loc+0x40, number_lower)
 
-    write_large_number(0x1278DA, player) # Write current player number
-    write_large_number(0x1278E6, world.players) # Write total number of players
+    write_large_number(0x1278DB, player) # Write current player number
+    write_large_number(0x1278E7, world.players) # Write total number of players
 
     return rom
 
