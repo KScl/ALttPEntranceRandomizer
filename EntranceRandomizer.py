@@ -9,6 +9,7 @@ import shlex
 import sys
 
 from Main import main
+from Rom import get_sprite_from_name
 from Utils import is_bundled, close_console
 
 
@@ -243,6 +244,8 @@ def parse_arguments(argv, no_defaults=False):
                              ''')
     parser.add_argument('--heartcolor', default=defval('red'), const='red', nargs='?', choices=['red', 'blue', 'green', 'yellow', 'random'],
                         help='Select the color of Link\'s heart meter. (default: %(default)s)')
+    parser.add_argument('--ow_palettes', default=defval('default'), choices=['default', 'random', 'blackout'])
+    parser.add_argument('--uw_palettes', default=defval('default'), choices=['default', 'random', 'blackout'])
     parser.add_argument('--sprite', help='''\
                              Path to a sprite sheet to use for Link. Needs to be in
                              binary format and have a length of 0x7000 (28672) bytes,
@@ -262,7 +265,6 @@ def parse_arguments(argv, no_defaults=False):
     parser.add_argument('--shuffleenemies', default=defval('none'), choices=['none', 'shuffled', 'chaos'])
     parser.add_argument('--enemy_health', default=defval('default'), choices=['default', 'easy', 'normal', 'hard', 'expert'])
     parser.add_argument('--enemy_damage', default=defval('default'), choices=['default', 'shuffled', 'chaos'])
-    parser.add_argument('--shufflepalette', default=defval(False), action='store_true')
     parser.add_argument('--shufflepots', default=defval(False), action='store_true')
     parser.add_argument('--beemizer', default=defval(0), type=lambda value: min(max(int(value), 0), 4))
     parser.add_argument('--multi', default=defval(1), type=lambda value: min(max(int(value), 1), 255))
@@ -285,11 +287,14 @@ def parse_arguments(argv, no_defaults=False):
         for player in range(1, multiargs.multi + 1):
             playerargs = parse_arguments(shlex.split(getattr(ret,f"p{player}")), True)
 
-            for name in ['logic', 'mode', 'swords', 'goal', 'difficulty', 'item_functionality',
+            for name in ['universalkeys',
+
+                         'logic', 'mode', 'swords', 'goal', 'difficulty', 'item_functionality',
                          'shuffle', 'crystals_ganon', 'crystals_gt', 'openpyramid',
                          'mapshuffle', 'compassshuffle', 'keyshuffle', 'bigkeyshuffle', 'startinventory',
-                         'retro', 'universalkeys', 'accessibility', 'hints', 'shufflepalette', 'shufflepots', 'beemizer',
-                         'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage']:
+                         'retro', 'accessibility', 'hints', 'beemizer',
+                         'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage', 'shufflepots',
+                         'ow_palettes', 'uw_palettes', 'sprite', 'disablemusic', 'quickswap', 'fastmenu', 'heartcolor', 'heartbeep']:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
                     setattr(ret, name, {1: value})
@@ -315,9 +320,9 @@ def start():
     if not args.jsonout and not os.path.isfile(args.rom):
         input('Could not find valid base rom for patching at expected path %s. Please run with -h to see help for further information. \nPress Enter to exit.' % args.rom)
         sys.exit(1)
-    if args.sprite is not None and not os.path.isfile(args.sprite):
+    if any([sprite is not None and not os.path.isfile(sprite) and not get_sprite_from_name(sprite) for sprite in args.sprite.values()]):
         if not args.jsonout:
-            input('Could not find link sprite sheet at given location. \nPress Enter to exit.' % args.sprite)
+            input('Could not find link sprite sheet at given location. \nPress Enter to exit.')
             sys.exit(1)
         else:
             raise IOError('Cannot find sprite file at %s' % args.sprite)

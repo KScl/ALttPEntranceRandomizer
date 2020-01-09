@@ -13,7 +13,7 @@ from Items import ItemFactory
 from Regions import create_regions, mark_light_world_regions
 from InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from EntranceShuffle import link_entrances, link_inverted_entrances
-from Rom import patch_rom, get_race_rom_patches, get_enemizer_patch, apply_rom_settings, Sprite, LocalRom, JsonRom
+from Rom import patch_rom, get_race_rom_patches, get_enemizer_patch, apply_rom_settings, LocalRom, JsonRom
 from Rules import set_rules
 from Dungeons import create_dungeons, fill_dungeons, fill_dungeons_restrictive
 from Fill import distribute_items_cutoff, distribute_items_staleness, distribute_items_restrictive, flood_items, balance_multiworld_progression
@@ -33,7 +33,7 @@ def main(args, seed=None):
     start = time.process_time()
 
     # initialize the world
-    world = World(args.multi, args.shuffle, args.logic, args.mode, args.swords, args.difficulty, args.item_functionality, args.timer, args.progressive, args.goal, args.algorithm, args.accessibility, args.shuffleganon, args.quickswap, args.fastmenu, args.disablemusic, args.retro, args.universalkeys, args.custom, args.customitemarray, args.hints)
+    world = World(args.multi, args.shuffle, args.logic, args.mode, args.swords, args.difficulty, args.item_functionality, args.timer, args.progressive, args.goal, args.algorithm, args.accessibility, args.shuffleganon, args.retro, args.universalkeys, args.custom, args.customitemarray, args.hints)
     logger = logging.getLogger('')
     if seed is None:
         random.seed(None)
@@ -135,14 +135,6 @@ def main(args, seed=None):
 
     logger.info('Patching ROM.')
 
-    if args.sprite is not None:
-        if isinstance(args.sprite, Sprite):
-            sprite = args.sprite
-        else:
-            sprite = Sprite(args.sprite)
-    else:
-        sprite = None
-
     player_names = parse_names_string(args.names)
     outfilebase = 'ER_%s' % (args.outputname if args.outputname else world.seed)
 
@@ -150,25 +142,20 @@ def main(args, seed=None):
     jsonout = {}
     if not args.suppress_rom:
         for player in range(1, world.players + 1):
+            sprite_random_on_hit = type(args.sprite[player]) is str and args.sprite[player].lower() == 'randomonhit'
             use_enemizer = (world.boss_shuffle[player] != 'none' or world.enemy_shuffle[player] != 'none'
                             or world.enemy_health[player] != 'default' or world.enemy_damage[player] != 'default'
-                            or args.shufflepalette[player] or args.shufflepots[player])
+                            or args.shufflepots[player] or sprite_random_on_hit)
 
-            local_rom = None
-            if args.jsonout:
-                rom = JsonRom(args.extendedmsu)
-            else:
-                if use_enemizer:
-                    local_rom = LocalRom(args.rom, True, args.extendedmsu)
-                    rom = JsonRom(args.extendedmsu)
-                else:
-                    rom = LocalRom(args.rom, True, args.extendedmsu)
+            rom = JsonRom(args.extendedmsu) if args.jsonout or use_enemizer else LocalRom(args.rom, True, args.extendedmsu)
+            local_rom = LocalRom(args.rom, True, args.extendedmsu) if not args.jsonout and use_enemizer else None
+
             patch_rom(world, player, rom, use_enemizer)
             rom_names.append((player, list(rom.name)))
 
             enemizer_patch = []
             if use_enemizer and (args.enemizercli or not args.jsonout):
-                enemizer_patch = get_enemizer_patch(world, player, rom, args.rom, args.enemizercli, args.shufflepalette[player], args.shufflepots[player])
+                enemizer_patch = get_enemizer_patch(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player], sprite_random_on_hit)
 
             if args.jsonout:
                 jsonout[f'patch{player}'] = rom.patches
@@ -185,7 +172,7 @@ def main(args, seed=None):
                     for addr, values in  get_race_rom_patches(rom).items():
                         rom.write_bytes(int(addr), values)
 
-                apply_rom_settings(rom, args.heartbeep, args.heartcolor, world.quickswap, world.fastmenu, world.disable_music, sprite, player_names)
+                apply_rom_settings(rom, args.heartbeep[player], args.heartcolor[player], args.quickswap[player], args.fastmenu[player], args.disablemusic[player], args.sprite[player], args.ow_palettes[player], args.uw_palettes[player], player_names)
 
                 mcsb_name = ''
                 if all([world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]]):
@@ -232,7 +219,7 @@ def main(args, seed=None):
 
 def copy_world(world):
     # ToDo: Not good yet
-    ret = World(world.players, world.shuffle, world.logic, world.mode, world.swords, world.difficulty, world.difficulty_adjustments, world.timer, world.progressive, world.goal, world.algorithm, world.accessibility, world.shuffle_ganon, world.quickswap, world.fastmenu, world.disable_music, world.retro, world.universal_keys, world.custom, world.customitemarray, world.hints)
+    ret = World(world.players, world.shuffle, world.logic, world.mode, world.swords, world.difficulty, world.difficulty_adjustments, world.timer, world.progressive, world.goal, world.algorithm, world.accessibility, world.shuffle_ganon, world.retro, world.universal_keys, world.custom, world.customitemarray, world.hints)
     ret.required_medallions = world.required_medallions.copy()
     ret.swamp_patch_required = world.swamp_patch_required.copy()
     ret.ganon_at_pyramid = world.ganon_at_pyramid.copy()
@@ -393,7 +380,6 @@ def create_playthrough(world):
             logging.getLogger('').debug('Checking if %s (Player %d) is required to beat the game.', location.item.name, location.item.player)
             old_item = location.item
             location.item = None
-            state.remove(old_item)
             if world.can_beat_game(state_cache[num]):
                 to_delete.append(location)
             else:
@@ -403,6 +389,14 @@ def create_playthrough(world):
         # cull entries in spheres for spoiler walkthrough at end
         for location in to_delete:
             sphere.remove(location)
+
+    # second phase, sphere 0
+    for item in [i for i in world.precollected_items if i.advancement]:
+        logging.getLogger('').debug('Checking if %s (Player %d) is required to beat the game.', item.name, item.player)
+        world.precollected_items.remove(item)
+        world.state.remove(item)
+        if not world.can_beat_game():
+            world.push_precollected(item)
 
     # we are now down to just the required progress items in collection_spheres. Unfortunately
     # the previous pruning stage could potentially have made certain items dependant on others
@@ -455,4 +449,6 @@ def create_playthrough(world):
                     old_world.spoiler.paths[str(world.get_region('Inverted Big Bomb Shop', player))] = get_path(state, world.get_region('Inverted Big Bomb Shop', player))
 
     # we can finally output our playthrough
-    old_world.spoiler.playthrough = OrderedDict([(str(i + 1), {str(location): str(location.item) for location in sphere}) for i, sphere in enumerate(collection_spheres)])
+    old_world.spoiler.playthrough = OrderedDict([("0", [item for item in world.precollected_items if item.advancement])])
+    for i, sphere in enumerate(collection_spheres):
+        old_world.spoiler.playthrough[str(i + 1)] = {str(location): str(location.item) for location in sphere}

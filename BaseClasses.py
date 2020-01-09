@@ -9,7 +9,7 @@ from Utils import int16_as_bytes
 
 class World(object):
 
-    def __init__(self, players, shuffle, logic, mode, swords, difficulty, difficulty_adjustments, timer, progressive, goal, algorithm, accessibility, shuffle_ganon, quickswap, fastmenu, disable_music, retro, universal_keys, custom, customitemarray, hints):
+    def __init__(self, players, shuffle, logic, mode, swords, difficulty, difficulty_adjustments, timer, progressive, goal, algorithm, accessibility, shuffle_ganon, retro, universal_keys, custom, customitemarray, hints):
         self.players = players
         self.shuffle = shuffle.copy()
         self.logic = logic.copy()
@@ -44,9 +44,6 @@ class World(object):
         self.accessibility = accessibility.copy()
         self.shuffle_ganon = shuffle_ganon
         self.fix_gtower_exit = self.shuffle_ganon
-        self.quickswap = quickswap
-        self.fastmenu = fastmenu
-        self.disable_music = disable_music
         self.retro = retro.copy()
         self.universal_keys = universal_keys.copy()
         self.custom = custom
@@ -215,6 +212,8 @@ class World(object):
         return [location for location in self.get_locations() if location.item is not None and location.item.name == item and location.item.player == player]
 
     def push_precollected(self, item):
+        if (item.smallkey and self.keyshuffle[item.player]) or (item.bigkey and self.bigkeyshuffle[item.player]):
+            item.advancement = True
         self.precollected_items.append(item)
         self.state.collect(item, True)
 
@@ -977,6 +976,7 @@ class Spoiler(object):
         self.medallions = {}
         self.playthrough = {}
         self.unreachables = []
+        self.startinventory = []
         self.locations = {}
         self.paths = {}
         self.metadata = {}
@@ -998,6 +998,8 @@ class Spoiler(object):
             for player in range(1, self.world.players + 1):
                 self.medallions['Misery Mire (Player %d)' % player] = self.world.required_medallions[player][0]
                 self.medallions['Turtle Rock (Player %d)' % player] = self.world.required_medallions[player][1]
+
+        self.startinventory = self.world.precollected_items.copy()
 
         self.locations = OrderedDict()
         listed_locations = set()
@@ -1097,6 +1099,7 @@ class Spoiler(object):
         out = OrderedDict()
         out['Entrances'] = list(self.entrances.values())
         out.update(self.locations)
+        out['Starting Inventory'] = self.startinventory
         out['Special'] = self.medallions
         if self.shops:
             out['Shops'] = self.shops
@@ -1135,8 +1138,6 @@ class Spoiler(object):
             outfile.write('Enemy health:                    %s\n' % self.metadata['enemy_health'])
             outfile.write('Enemy damage:                    %s\n' % self.metadata['enemy_damage'])
             outfile.write('Hints:                           %s\n' % {k: 'Yes' if v else 'No' for k, v in self.metadata['hints'].items()})
-            outfile.write('L\\R Quickswap enabled:           %s\n' % ('Yes' if self.world.quickswap else 'No'))
-            outfile.write('Menu speed:                      %s' % self.world.fastmenu)
             if self.entrances:
                 outfile.write('\n\nEntrances:\n\n')
                 outfile.write('\n'.join(['%s%s %s %s' % ('Player {0}: '.format(entry['player']) if self.world.players >1 else '', entry['entrance'], '<=>' if entry['direction'] == 'both' else '<=' if entry['direction'] == 'exit' else '=>', entry['exit']) for entry in self.entrances.values()]))
@@ -1148,12 +1149,14 @@ class Spoiler(object):
                 for player in range(1, self.world.players + 1):
                     outfile.write('\nMisery Mire Medallion (Player %d): %s' % (player, self.medallions['Misery Mire (Player %d)' % player]))
                     outfile.write('\nTurtle Rock Medallion (Player %d): %s' % (player, self.medallions['Turtle Rock (Player %d)' % player]))
+            outfile.write('\n\nStarting Inventory:\n\n')
+            outfile.write('\n'.join(map(str, self.startinventory)))
             outfile.write('\n\nLocations:\n\n')
             outfile.write('\n'.join(['%s: %s' % (location, item) for grouping in self.locations.values() for (location, item) in grouping.items()]))
             outfile.write('\n\nShops:\n\n')
             outfile.write('\n'.join("{} [{}]\n    {}".format(shop['location'], shop['type'], "\n    ".join(item for item in [shop.get('item_0', None), shop.get('item_1', None), shop.get('item_2', None)] if item)) for shop in self.shops))
             outfile.write('\n\nPlaythrough:\n\n')
-            outfile.write('\n'.join(['%s: {\n%s\n}' % (sphere_nr, '\n'.join(['  %s: %s' % (location, item) for (location, item) in sphere.items()])) for (sphere_nr, sphere) in self.playthrough.items()]))
+            outfile.write('\n'.join(['%s: {\n%s\n}' % (sphere_nr, '\n'.join(['  %s: %s' % (location, item) for (location, item) in sphere.items()] if sphere_nr != '0' else [f'  {item}' for item in sphere])) for (sphere_nr, sphere) in self.playthrough.items()]))
             if self.unreachables:
                 outfile.write('\n\nUnreachable Items:\n\n')
                 outfile.write('\n'.join(['%s: %s' % (unreachable.item, unreachable) for unreachable in self.unreachables]))
