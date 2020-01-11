@@ -384,7 +384,10 @@ def set_up_shops(world, player):
         for shop in random.sample([s for s in world.shops if s.replaceable and s.region.player == player], 5):
             shop.active = True
             shop.add_inventory(0, 'Single Arrow', 80)
-            shop.add_inventory(1, 'Small Key (Universal)' if world.universal_keys[player] else 'Small Heart', 10)
+            if world.universal_keys[player]:
+                shop.add_inventory(1, 'Small Key (Universal)', 100)
+            else:
+                shop.add_inventory(1, 'Small Heart', 10)
             shop.add_inventory(2, 'Bombs (10)', 50)
     elif world.universal_keys[player]:
         for shop in [s for s in world.shops if s.replaceable and s.region.player == player]:
