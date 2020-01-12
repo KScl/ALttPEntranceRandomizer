@@ -10,10 +10,10 @@ import zlib
 
 from BaseClasses import World, CollectionState, Item, Region, Location, Shop
 from Items import ItemFactory
-from Regions import create_regions, mark_light_world_regions
+from Regions import create_regions, create_shops, mark_light_world_regions
 from InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from EntranceShuffle import link_entrances, link_inverted_entrances
-from Rom import patch_rom, get_race_rom_patches, get_enemizer_patch, apply_rom_settings, LocalRom, JsonRom
+from Rom import patch_rom, patch_race_rom, patch_enemizer, apply_rom_settings, LocalRom, JsonRom
 from Rules import set_rules
 from Dungeons import create_dungeons, fill_dungeons, fill_dungeons_restrictive
 from Fill import distribute_items_cutoff, distribute_items_staleness, distribute_items_restrictive, flood_items, balance_multiworld_progression
@@ -24,10 +24,7 @@ __version__ = '0.6.3-pre'
 
 def main(args, seed=None):
     if args.outputpath:
-        try:
-            os.mkdir(args.outputpath)
-        except OSError:
-            pass
+        os.makedirs(args.outputpath, exist_ok=True)
         output_path.cached_path = args.outputpath
 
     start = time.process_time()
@@ -74,6 +71,7 @@ def main(args, seed=None):
             create_regions(world, player)
         else:
             create_inverted_regions(world, player)
+        create_shops(world, player)
         create_dungeons(world, player)
 
     logger.info('Shuffling the World about.')
@@ -148,32 +146,25 @@ def main(args, seed=None):
                             or args.shufflepots[player] or sprite_random_on_hit)
 
             rom = JsonRom(args.extendedmsu) if args.jsonout or use_enemizer else LocalRom(args.rom, True, args.extendedmsu)
-            local_rom = LocalRom(args.rom, True, args.extendedmsu) if not args.jsonout and use_enemizer else None
 
             patch_rom(world, player, rom, use_enemizer)
             rom_names.append((player, list(rom.name)))
 
-            enemizer_patch = []
             if use_enemizer and (args.enemizercli or not args.jsonout):
-                enemizer_patch = get_enemizer_patch(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player], sprite_random_on_hit)
+                patch_enemizer(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player], sprite_random_on_hit)
+                if not args.jsonout:
+                    patches = rom.patches
+                    rom = LocalRom(args.rom, True, args.extendedmsu)
+                    rom.merge_enemizer_patches(patches)
+
+            if args.race:
+                patch_race_rom(rom)
+
+            apply_rom_settings(rom, args.heartbeep[player], args.heartcolor[player], args.quickswap[player], args.fastmenu[player], args.disablemusic[player], args.sprite[player], args.ow_palettes[player], args.uw_palettes[player], player_names)
 
             if args.jsonout:
                 jsonout[f'patch{player}'] = rom.patches
-                if use_enemizer:
-                    jsonout[f'enemizer{player}'] = enemizer_patch
-                if args.race:
-                    jsonout[f'race{player}'] = get_race_rom_patches(rom)
             else:
-                if use_enemizer:
-                    local_rom.patch_enemizer(rom.patches, os.path.join(os.path.dirname(args.enemizercli), "enemizerBasePatch.json"), enemizer_patch)
-                    rom = local_rom
-
-                if args.race:
-                    for addr, values in  get_race_rom_patches(rom).items():
-                        rom.write_bytes(int(addr), values)
-
-                apply_rom_settings(rom, args.heartbeep[player], args.heartcolor[player], args.quickswap[player], args.fastmenu[player], args.disablemusic[player], args.sprite[player], args.ow_palettes[player], args.uw_palettes[player], player_names)
-
                 mcsb_name = ''
                 if all([world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]]):
                     mcsb_name = '-keysanity'
@@ -194,11 +185,15 @@ def main(args, seed=None):
                                                                           "-nohints" if not world.hints[player] else "")) if not args.outputname else ''
                 rom.write_to_file(output_path(f'{outfilebase}{playername}{outfilesuffix}.sfc'))
 
-        with open(output_path('%s_multidata' % outfilebase), 'wb') as f:
-            jsonstr = json.dumps((world.players,
-                                  rom_names,
-                                  [((location.address, location.player), (location.item.code, location.item.player)) for location in world.get_filled_locations() if type(location.address) is int]))
-            f.write(zlib.compress(jsonstr.encode("utf-8")))
+        multidata = zlib.compress(json.dumps((world.players,
+                                              rom_names,
+                                              [((location.address, location.player), (location.item.code, location.item.player)) for location in world.get_filled_locations() if type(location.address) is int])
+                                             ).encode("utf-8"))
+        if args.jsonout:
+            jsonout["multidata"] = list(multidata)
+        else:
+            with open(output_path('%s_multidata' % outfilebase), 'wb') as f:
+                f.write(multidata)
 
     if args.create_spoiler and not args.jsonout:
         world.spoiler.to_file(output_path('%s_Spoiler.txt' % outfilebase))
@@ -257,6 +252,7 @@ def copy_world(world):
             create_regions(ret, player)
         else:
             create_inverted_regions(ret, player)
+        create_shops(ret, player)
         create_dungeons(ret, player)
 
     copy_dynamic_regions_and_locations(world, ret)
@@ -268,7 +264,6 @@ def copy_world(world):
 
     for shop in world.shops:
         copied_shop = ret.get_region(shop.region.name, shop.region.player).shop
-        copied_shop.active = shop.active
         copied_shop.inventory = copy.copy(shop.inventory)
 
     # connect copied world
@@ -314,7 +309,7 @@ def copy_dynamic_regions_and_locations(world, ret):
         # Note: ideally exits should be copied here, but the current use case (Take anys) do not require this
 
         if region.shop:
-            new_reg.shop = Shop(new_reg, region.shop.room_id, region.shop.type, region.shop.shopkeeper_config, region.shop.replaceable)
+            new_reg.shop = Shop(new_reg, region.shop.room_id, region.shop.type, region.shop.shopkeeper_config, region.shop.custom, region.shop.locked)
             ret.shops.append(new_reg.shop)
 
     for location in world.dynamic_locations:
@@ -449,6 +444,6 @@ def create_playthrough(world):
                     old_world.spoiler.paths[str(world.get_region('Inverted Big Bomb Shop', player))] = get_path(state, world.get_region('Inverted Big Bomb Shop', player))
 
     # we can finally output our playthrough
-    old_world.spoiler.playthrough = OrderedDict([("0", [item for item in world.precollected_items if item.advancement])])
+    old_world.spoiler.playthrough = OrderedDict([("0", [str(item) for item in world.precollected_items if item.advancement])])
     for i, sphere in enumerate(collection_spheres):
         old_world.spoiler.playthrough[str(i + 1)] = {str(location): str(location.item) for location in sphere}
