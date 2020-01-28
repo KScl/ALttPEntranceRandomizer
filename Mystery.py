@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--multi', default=1, type=lambda value: min(max(int(value), 1), 255))
     parser.add_argument('--names', default='')
     parser.add_argument('--create_spoiler', action='store_true')
+    parser.add_argument('--race', action='store_true');
     parser.add_argument('--rom')
     parser.add_argument('--enemizercli')
     parser.add_argument('--outputpath')
@@ -74,7 +75,7 @@ def main():
     erargs.seed = seed
     erargs.names = args.names
     erargs.create_spoiler = args.create_spoiler
-    erargs.race = True
+    erargs.race = args.race
     erargs.outputname = seedname
     erargs.outputpath = args.outputpath
     erargs.extendedmsu = args.extendedmsu
