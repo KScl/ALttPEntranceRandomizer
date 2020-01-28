@@ -14,9 +14,9 @@ def adjust(args):
     outfilebase = os.path.basename(args.rom)[:-4] + '_adjusted'
 
     if os.stat(args.rom).st_size in (0x200000, 0x400000) and os.path.splitext(args.rom)[-1].lower() == '.sfc':
-        rom = LocalRom(args.rom, False)
+        rom = LocalRom(args.rom, None)
         if os.path.isfile(args.baserom):
-            baserom = LocalRom(args.baserom, True)
+            baserom = LocalRom(args.baserom, 'data/branch/compiled_base.json')
             rom.orig_buffer = baserom.orig_buffer
     else:
         raise RuntimeError('Provided Rom is not a valid Link to the Past Randomizer Rom. Please provide one for adjusting.')

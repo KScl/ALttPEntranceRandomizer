@@ -91,7 +91,7 @@ def close_console():
         except Exception:
             pass
 
-def make_new_base2current(old_rom='Zelda no Densetsu - Kamigami no Triforce (Japan).sfc', new_rom='working.sfc'):
+def make_new_base2current(old_rom='Zelda no Densetsu - Kamigami no Triforce (Japan).sfc', new_rom='working.sfc', out_file='data/base2current.json'):
     from collections import OrderedDict
     import json
     import hashlib
@@ -110,9 +110,29 @@ def make_new_base2current(old_rom='Zelda no Densetsu - Kamigami no Triforce (Jap
     for offset in reversed(list(out_data.keys())):
         if offset - 1 in out_data:
             out_data[offset-1].extend(out_data.pop(offset))
-    with open('data/base2current.json', 'wt') as outfile:
+    with open(out_file, 'wt') as outfile:
         json.dump([{key:value} for key, value in out_data.items()], outfile, separators=(",", ":"))
 
     basemd5 = hashlib.md5()
     basemd5.update(new_rom_data)
     return "New Rom Hash: " + basemd5.hexdigest()
+
+def make_base_rom(json_patch='data/base2current.json', out='roms/base2current.sfc'):
+    from Rom import LocalRom
+    rom = LocalRom('Zelda no Densetsu - Kamigami no Triforce (Japan).sfc', json_patch)
+    rom.write_to_file(out)
+
+def make_branch_rom(json_patch='data/base2current.json', branch_patch='data/branch/base.json', out='roms/branch_base.sfc'):
+    from Rom import LocalRom
+    rom = LocalRom('Zelda no Densetsu - Kamigami no Triforce (Japan).sfc', json_patch)
+    rom.apply_json_patch(branch_patch)
+    rom.write_to_file(out)
+
+def update_branch_base2current():
+    print('Updating base patch')
+    make_branch_rom('data/base2current.json', 'data/branch/base.json', 'roms/branch_base.sfc')
+    print(make_new_base2current('Zelda no Densetsu - Kamigami no Triforce (Japan).sfc', 'roms/branch_base.sfc', 'data/branch/compiled_base.json'))
+
+    print('Updating extmsu patch')
+    make_branch_rom('data/base2current_extendedmsu.json', 'data/branch/extmsu.json', 'roms/branch_extmsu.sfc')
+    print(make_new_base2current('Zelda no Densetsu - Kamigami no Triforce (Japan).sfc', 'roms/branch_extmsu.sfc', 'data/branch/compiled_extmsu.json'))

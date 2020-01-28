@@ -138,6 +138,8 @@ def main(args, seed=None):
 
     rom_names = []
     jsonout = {}
+    base_json_patch = 'data/branch/compiled_extmsu.json' if args.extendedmsu else 'data/branch/compiled_base.json'
+
     if not args.suppress_rom:
         for player in range(1, world.players + 1):
             sprite_random_on_hit = type(args.sprite[player]) is str and args.sprite[player].lower() == 'randomonhit'
@@ -145,7 +147,7 @@ def main(args, seed=None):
                             or world.enemy_health[player] != 'default' or world.enemy_damage[player] != 'default'
                             or args.shufflepots[player] or sprite_random_on_hit)
 
-            rom = JsonRom(args.extendedmsu) if args.jsonout or use_enemizer else LocalRom(args.rom, True, args.extendedmsu)
+            rom = JsonRom(base_json_patch) if args.jsonout or use_enemizer else LocalRom(args.rom, base_json_patch)
 
             patch_rom(world, player, rom, use_enemizer)
             rom_names.append((player, list(rom.name)))
@@ -154,7 +156,7 @@ def main(args, seed=None):
                 patch_enemizer(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player], sprite_random_on_hit)
                 if not args.jsonout:
                     patches = rom.patches
-                    rom = LocalRom(args.rom, True, args.extendedmsu)
+                    rom = LocalRom(args.rom, base_json_patch)
                     rom.merge_enemizer_patches(patches)
 
             if args.race:

@@ -68,7 +68,7 @@ def main(args):
 
     logger.info('Patching ROM.')
 
-    rom = LocalRom(args.rom)
+    rom = LocalRom(args.rom, 'data/branch/compiled_base.json')
     patch_rom(world, 1, rom, False)
 
     apply_rom_settings(rom, args.heartbeep, args.heartcolor, args.quickswap, args.fastmenu, args.disablemusic, args.sprite, args.ow_palettes, args.uw_palettes)

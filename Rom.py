@@ -25,8 +25,8 @@ JAP10HASH = '03a63945398191337e896e5771f77173'
 
 class JsonRom(object):
 
-    def __init__(self, extended_msu=False):
-        self.extended_msu = extended_msu
+    def __init__(self, patch=None):
+        self.base_patch = patch
         self.name = None
         self.orig_buffer = None
         self.patches = {}
@@ -71,14 +71,15 @@ class JsonRom(object):
 
 class LocalRom(object):
 
-    def __init__(self, file, patch=True, extended_msu=False):
-        self.extended_msu = extended_msu
+    def __init__(self, file, patch=None):
+        self.base_patch = patch
         self.name = None
         self.orig_buffer = None
         with open(file, 'rb') as stream:
             self.buffer = read_rom(stream)
-        if patch:
-            self.patch_base_rom()
+        if self.base_patch is not None:
+            self.verify_rom()
+            self.apply_json_patch(self.base_patch)
             self.orig_buffer = self.buffer.copy()
 
     def write_byte(self, address, value):
@@ -92,7 +93,7 @@ class LocalRom(object):
         with open(file, 'wb') as outfile:
             outfile.write(self.buffer)
 
-    def patch_base_rom(self):
+    def verify_rom(self):
         # verify correct checksum of baserom
         basemd5 = hashlib.md5()
         basemd5.update(self.buffer)
@@ -102,8 +103,8 @@ class LocalRom(object):
         # extend to 2MB
         self.buffer.extend(bytearray([0x00] * (0x200000 - len(self.buffer))))
 
+    def apply_json_patch(self, patch_path):
         # load randomizer patches
-        patch_path = 'data/base2current_extendedmsu.json' if self.extended_msu else 'data/base2current.json'
         with open(local_path(patch_path), 'r') as stream:
             patches = json.load(stream)
         for patch in patches:
@@ -155,7 +156,7 @@ def read_rom(stream):
 
 def patch_enemizer(world, player, rom, baserom_path, enemizercli, shufflepots, random_sprite_on_hit):
     baserom_path = os.path.abspath(baserom_path)
-    basepatch_path = os.path.abspath(local_path('data/base2current_extendedmsu.json' if rom.extended_msu else 'data/base2current.json'))
+    basepatch_path = os.path.abspath(rom.base_patch)
     enemizer_basepatch_path = os.path.join(os.path.dirname(enemizercli), "enemizerBasePatch.json")
     randopatch_path = os.path.abspath(output_path('enemizer_randopatch.json'))
     options_path = os.path.abspath(output_path('enemizer_options.json'))
